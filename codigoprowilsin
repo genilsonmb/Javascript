@@ -1,0 +1,50 @@
+var express = require('express'),
+    path = require('path'),
+    bodyParser = require('body-parser'),
+    cons = require('consolidate'),
+    dust = require('dustjs-helpers'),
+    pg = require('pg'),
+    app = express();
+
+//DB connect string
+var connect = "postgres://projetolabprog3:projetolabprog3@localhost/receitasdb";
+
+var client = new pg.Client(connect , function(err, client, done){
+  if (err) {
+   return console.error('error fethcing data',err);
+  }
+ });
+
+
+// Atribuir dust engine aos arquivos .dust
+app.engine('dust', cons.dust);
+
+// setar extensao default .dustj
+app.set('view engine', 'dust');
+app.set('views',__dirname + '/views');
+
+//setar pasta publica
+app.use(express.static(path.join(__dirname, 'public')));
+
+//middleware body bodyParser
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({extended: false}));
+
+app.get('/',function(req,res){
+ // connect to postgres
+ client.connect();
+ client.query('SELECT * FROM receitas', function(err, result) {
+  if(err) {
+   return console.error('error running query', err);
+  }
+  console.log('Rendering index');
+  res.render('index', {receitas: result.rows});
+  client.end();
+ });
+});
+
+
+//servidor
+app.listen(3000,function(){
+    console.log('Servidor iniciado');
+});
